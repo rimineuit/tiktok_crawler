@@ -8,7 +8,7 @@ if sys.platform.startswith("win"):
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from tiktok_crawler.crawler import crawl_links_tiktok   # Import hàm async đã có
-
+import shutil
 app = FastAPI()
 
 class TikTokBody(BaseModel):
@@ -37,6 +37,16 @@ async def tiktok_get_video_links_and_metadata(body: TikTokBody):
 
         with open("results.json", "r", encoding="utf-8") as f:
             result = json.load(f)
+        # Xoá file sau khi đọc
+        import os, shutil
+
+        # Xóa file (nếu tồn tại)
+        if os.path.exists("results.json"):
+            os.remove("results.json")
+
+        # Xóa folder (nếu tồn tại)
+        if os.path.exists("storage"):
+            shutil.rmtree("storage")
 
         return {"status": "success", "data": result}
 
