@@ -21,8 +21,7 @@ async def crawl_links_tiktok(url: str, browser_type: str, label: str, max_items:
             "viewport": {"width": 1280, "height": 720},
             'permissions': []
         },
-        storage_client=storage_client,
-        max_concurrency=3,
+        storage_client=storage_client
     )
     
     # --- Handler mặc định: crawl trang profile để lấy link video ---
