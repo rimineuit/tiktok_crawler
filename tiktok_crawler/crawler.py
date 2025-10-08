@@ -86,7 +86,7 @@ async def crawl_links_tiktok(url: str, browser_type: str, label: str, max_items:
     )
     data = await crawler.get_data()
     
-    return json.dumps(data.items)
+    return json.dumps(data.items, ensure_ascii=False)
      
 # import sys
 # if __name__ == '__main__':
