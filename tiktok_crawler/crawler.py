@@ -1,15 +1,10 @@
 # main.py
 from datetime import timedelta
-# /app/
-# đầu crawler.py
-import sys, pathlib
-sys.path.append(str(pathlib.Path(__file__).resolve().parents[1]))
 
 import asyncio
 from utils import extract_video_metadata
-from crawlee import ConcurrencySettings, Request
+from crawlee import Request
 from crawlee.crawlers import PlaywrightCrawler, PlaywrightCrawlingContext
-
 
 async def crawl_links_tiktok(url: str, browser_type: str, label: str, max_items: int, max_comments: int) -> None:
     """The crawler entry point."""
