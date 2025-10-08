@@ -1,0 +1,16 @@
+{
+  "unique_key": "https://www.tiktok.com/@pnjofficialvn",
+  "url": "https://www.tiktok.com/@pnjofficialvn",
+  "method": "GET",
+  "headers": {},
+  "payload": null,
+  "user_data": {
+    "label": "newest",
+    "limit": 10,
+    "max_comments": 100
+  },
+  "retry_count": 0,
+  "no_retry": false,
+  "loaded_url": null,
+  "handled_at": null
+}
