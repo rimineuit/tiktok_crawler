@@ -3,7 +3,6 @@ from pydantic import BaseModel
 import subprocess
 import sys
 import os
-from utils import load_all_json_data
 app = FastAPI()
 env = os.environ.copy()
 
@@ -48,8 +47,10 @@ async def tiktok_get_video_links_and_metadata(body: TikTokBody):
         )
     
     try:
-        result = load_all_json_data()
-
+        import json
+        with open("results.json", "r", encoding="utf-8") as f:
+            result = json.load(f)
+            
     except Exception as e:
         raise HTTPException(
             status_code=500,

@@ -1,1 +1,4 @@
 venv/
+storage/
+__pycache__/
+*.json

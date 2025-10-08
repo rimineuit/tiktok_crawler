@@ -9,11 +9,11 @@
       "state": 3
     },
     "label": "newest",
-    "limit": 30,
+    "limit": 20,
     "max_comments": 100
   },
   "retry_count": 0,
   "no_retry": false,
   "loaded_url": "https://www.tiktok.com/@pnjofficialvn",
-  "handled_at": "2025-10-08 09:34:10.852590+00:00"
+  "handled_at": "2025-10-08 10:44:06.930419+00:00"
 }
