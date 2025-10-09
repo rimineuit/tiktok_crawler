@@ -26,4 +26,4 @@ COPY . /app
 # EXPOSE 8000
 
 # 🔟 Lệnh chạy app (Uvicorn)
-CMD ["python", "new_main.py"]
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
