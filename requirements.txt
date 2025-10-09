@@ -1,6 +1,6 @@
 # Optional
 uvicorn
-fastapi
+# fastapi
 
 # Crawlee & Pydantic (đã fix lỗi)
 pydantic==2.11.0
@@ -8,3 +8,4 @@ crawlee[playwright]==1.0.1
 
 # Another
 pytz
+litestar

@@ -1,15 +1,15 @@
-import sys, asyncio
-if sys.platform.startswith("win"):
-    try:
-        asyncio.set_event_loop_policy(asyncio.WindowsProactorEventLoopPolicy())
-    except Exception:
-        pass
-    
+import asyncio
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
-from tiktok_crawler.crawler import crawl_links_tiktok   # Import hàm async đã có
-import shutil
+import subprocess
+import re
+import json
+import os
 app = FastAPI()
+env = os.environ.copy()
+
+env["PYTHONIOENCODING"] = "utf-8"
+env["PYTHONUTF8"] = "1"
 
 class TikTokBody(BaseModel):
     url: str
@@ -18,37 +18,56 @@ class TikTokBody(BaseModel):
     max_items: int = 30
     max_comments: int = 100
 
+import sys
 @app.post("/tiktok/get_video_links_and_metadata")
 async def tiktok_get_video_links_and_metadata(body: TikTokBody):
     try:
         # Gọi crawler trực tiếp bằng await
-        result = await crawl_links_tiktok(
-            url=body.url.strip(),
-            browser_type=body.browser_type.strip().lower(),
-            label=body.label.strip().lower(),
-            max_items=body.max_items,
-            max_comments=body.max_comments
-        )
+        label = body.label.strip().lower()
+        browser_type = body.browser_type.strip().lower()
+        max_comments = str(body.max_comments)
+        # Nối các URL thành một chuỗi cách nhau bởi dấu cách
+        clean_url = body.url.strip()
+        max_items = str(body.max_items).strip()
+        script_path = "get_list_videos.py"
+        cmd = [sys.executable, script_path, browser_type, label, max_items, clean_url, max_comments]
+        print(cmd)
+        try:
+            proc = subprocess.run(
+                cmd,
+                capture_output=True,
+                text=True,
+                timeout=900,
+                encoding="utf-8",
+                env=env
+            )
+            
+        except subprocess.TimeoutExpired:
+            raise HTTPException(status_code=504, detail="⏱️ Quá thời gian xử lý")
+            
+        try:
+            # Lấy phần output sau chữ "Result"
+            result_start = proc.stdout.find("Result: \n")
+            if result_start == -1:
+                raise ValueError("Không tìm thấy đoạn 'Result' trong stdout")
 
-        # Sau khi chạy xong, đọc file results.json
-        # import json, os
-        # if not os.path.exists("results.json"):
-        #     raise HTTPException(status_code=500, detail="Không tìm thấy file results.json")
+            json_part = proc.stdout[result_start:]  # phần sau "Result"
+            # Tìm JSON mảng đầu tiên bắt đầu bằng [ và kết thúc bằng ]
+            json_match = re.search(r"\[\s*{[\s\S]*?}\s*\]", json_part)
+            
+            if not json_match:
+                raise ValueError("Không tìm thấy JSON hợp lệ trong stdout")
 
-        # with open("results.json", "r", encoding="utf-8") as f:
-        #     result = json.load(f)
-        # # Xoá file sau khi đọc
-        # import os, shutil
+            json_text = json_match.group(0).replace("\n", "")
+            result_json = json.loads(json_text)
 
-        # # Xóa file (nếu tồn tại)
-        # if os.path.exists("results.json"):
-        #     os.remove("results.json")
-
-        # # Xóa folder (nếu tồn tại)
-        # if os.path.exists("storage"):
-        #     shutil.rmtree("storage")
-
-        return {"status": "success", "data": result}
+        except Exception as e:
+            raise HTTPException(
+                status_code=500,
+                detail=f"Lỗi parse JSON từ output: {e}\n\n--- STDOUT ---\n{proc.stdout}"
+            )
+            
+        return result_json
 
     except asyncio.TimeoutError:
         raise HTTPException(status_code=504, detail="⏱️ Quá thời gian xử lý")

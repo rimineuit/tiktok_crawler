@@ -1,34 +1,39 @@
-# main.py
-from datetime import timedelta
-
 import asyncio
-from utils import extract_video_metadata
-from crawlee import Request, ConcurrencySettings
+from pydantic import BaseModel
 from crawlee.crawlers import PlaywrightCrawler, PlaywrightCrawlingContext
+from crawlee.storage_clients import MemoryStorageClient
+from utils import extract_video_metadata
 
-async def crawl_links_tiktok(url: str, browser_type: str, label: str, max_items: int, max_comments: int) -> None:
-    
-    """The crawler entry point."""
+class TikTokBody(BaseModel):
+    url: str
+    browser_type: str = "chromium"
+    label: str = "newest"
+    max_items: int = 30
+    max_comments: int = 100
+
+# @post('/tiktok/get_video_links_and_metadata')
+async def tiktok_get_video_links_and_metadata(tiktok_url, browser_type, label, max_items, max_comments) -> dict:
+    """The crawler entry point that will be called when the HTTP endpoint is accessed."""
+    # Disable writing storage data to the file system
+    storage_client = MemoryStorageClient()
+
     crawler = PlaywrightCrawler(
         headless=True,
-        max_requests_per_crawl=3,
-        request_handler_timeout=timedelta(seconds=1500),
+        max_requests_per_crawl=10,
         browser_type=browser_type,
+        storage_client=storage_client,
         browser_new_context_options={
-            "viewport": {"width": 1280, "height": 720},
-            'permissions': []
+            "viewport": {"width": 1280, "height": 900}
         },
-    concurrency_settings=ConcurrencySettings(max_concurrency=1),
+        # launchOptions=["--no-sandbox", "--disable-setuid-sandbox"]
     )
-    
-    # --- Handler mặc định: crawl trang profile để lấy link video ---
+
     @crawler.router.default_handler
     async def request_handler(context: PlaywrightCrawlingContext) -> None:
-        url = context.request.url
-        context.log.info(f'Start profile crawl: {url}')
+        context.log.info(f'Start profile crawl: {context.request.url}')
 
         # Lấy giới hạn số video cần crawl
-        limit = context.request.user_data.get('limit', 10)
+        limit = max_items
         if not isinstance(limit, int) or limit <= 0:
             raise ValueError('`limit` must be a positive integer')
         await context.page.wait_for_load_state("networkidle", timeout=30000)
@@ -79,21 +84,27 @@ async def crawl_links_tiktok(url: str, browser_type: str, label: str, max_items:
         
     # Run the crawler to collect data from several user pages
     await crawler.run(
-            [Request.from_url(url, user_data={'limit': max_items, 'max_comments': max_comments}, label=label)]
+            [tiktok_url]
     )
     data = await crawler.get_data()
+    import json
+    return json.dumps(data.items, indent=4)
+
+
+# # Initialize the Litestar app with our route handler
+# app = Litestar(route_handlers=[tiktok_get_video_links_and_metadata])
+
+# # Start the Uvicorn server using the `PORT` environment variable provided by GCP
+# # This is crucial - Cloud Run expects your app to listen on this specific port
+# uvicorn.run(app, host='0.0.0.0', port=int(os.environ.get('PORT', '8080')))  # noqa: S104 # Use all interfaces in a container, safely
+import sys
+if __name__ == "__main__":
+    tiktok_url = sys.argv[4].strip()
+    web = sys.argv[1].strip() if len(sys.argv) > 2 else "chromium"
+    label = sys.argv[2].strip() if len(sys.argv) > 3 else "newest"
+    max_items = int(sys.argv[3].strip()) if len(sys.argv) > 4 else 30
+    max_comments = int(sys.argv[5]) if len(sys.argv) > 5 else 100
     
-    return data.items
-     
-# import sys
-# if __name__ == '__main__':
-#     if len(sys.argv) < 4:    
-#         sys.exit("Usage: python get_tiktok_video_links_and_metadata.py <browser_type> <label> <max_items> <TikTok_URL>")
-    
-#     tiktok_url = sys.argv[5].strip()
-#     web = sys.argv[1].strip() if len(sys.argv) > 2 else "firefox"
-#     label = sys.argv[2].strip() if len(sys.argv) > 3 else "newest"
-#     max_items = int(sys.argv[3].strip()) if len(sys.argv) > 4 else 30
-#     get_comments = sys.argv[4]
-#     max_comments = int(sys.argv[6]) if len(sys.argv) > 5 else 100
-#     asyncio.run(crawl_links_tiktok(tiktok_url, web, label, max_items, max_comments))
+    result = asyncio.run(tiktok_get_video_links_and_metadata(tiktok_url, web, label, max_items, max_comments))
+    print("Result: ")
+    print(result)
