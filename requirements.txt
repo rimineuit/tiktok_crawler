@@ -1,11 +1,20 @@
-# Optional
-uvicorn
+# # Optional
+# uvicorn
 fastapi
 
-# Crawlee & Pydantic (đã fix lỗi)
-pydantic==2.11.0
-crawlee[playwright]==1.0.1
+# # Crawlee & Pydantic (đã fix lỗi)
+# pydantic==2.11.0
+# # crawlee==1.0.1
 
-# Another
+# # Another
+# pytz
+# # litestar
+
+
+
+litestar>=2.10
+uvicorn[standard]>=0.30
+crawlee>=0.5.5
+playwright>=1.46
+pydantic
 pytz
-# litestar

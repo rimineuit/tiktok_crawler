@@ -1,15 +1,17 @@
-import os
-import sys
 import json
-import asyncio
+import os
 import logging
+import uvicorn
+from litestar import Litestar, get, post
 from logging.handlers import TimedRotatingFileHandler
-from pydantic import BaseModel
+from utils import extract_video_metadata
 from crawlee.crawlers import PlaywrightCrawler, PlaywrightCrawlingContext
 from crawlee.storage_clients import MemoryStorageClient
-from utils import extract_video_metadata
+from pydantic import BaseModel
+import sys
+import logging
+import asyncio
 
-# ========== LOGGING SETUP ==========
 def setup_logger():
     log_dir = os.getenv("LOG_DIR", "/app/logs")
     os.makedirs(log_dir, exist_ok=True)
@@ -36,42 +38,29 @@ def setup_logger():
     return logger
 
 logger = setup_logger()
-# ===================================
-
-
 class TikTokBody(BaseModel):
     url: str
-    browser_type: str = "firefox"
+    browser_type: str = "chromium"
     label: str = "newest"
     max_items: int = 30
     max_comments: int = 100
 
-
-# @post('/tiktok/get_video_links_and_metadata')
-async def tiktok_get_video_links_and_metadata(tiktok_url, browser_type, label, max_items, max_comments) -> dict:
+@post('/')
+async def main(data: TikTokBody) -> str:
     """The crawler entry point that will be called when the HTTP endpoint is accessed."""
-    logger.info(
-        "Start crawl | url=%s | browser_type=%s | label=%s | max_items=%s | max_comments=%s",
-        tiktok_url, browser_type, label, max_items, max_comments
-    )
-
     # Disable writing storage data to the file system
-    storage_client = MemoryStorageClient()
+    # storage_client = MemoryStorageClient()
 
     crawler = PlaywrightCrawler(
         headless=True,
         max_requests_per_crawl=10,
-        browser_type=browser_type,
-        storage_client=storage_client,
-        browser_new_context_options={
-            "viewport": {"width": 1280, "height": 900}
-        },
-        # launchOptions=["--no-sandbox", "--disable-setuid-sandbox"]  # nếu cần
+        browser_type='firefox',
+        # storage_client=storage_client,
     )
 
-    # ===== Page event taps for extra logs =====
     @crawler.router.default_handler
-    async def request_handler(context: PlaywrightCrawlingContext) -> None:
+    async def default_handler(context: PlaywrightCrawlingContext) -> None:
+        """Default request handler that processes each page during crawling."""
         context.log.info(f"Start profile crawl: {context.request.url}")
 
         # Hook browser console logs (giúp debug selector/JS)
@@ -94,7 +83,7 @@ async def tiktok_get_video_links_and_metadata(tiktok_url, browser_type, label, m
         # ========================================
 
         # Lấy giới hạn số video cần crawl
-        limit = max_items
+        limit = data.max_items
         if not isinstance(limit, int) or limit <= 0:
             raise ValueError("`limit` must be a positive integer")
 
@@ -184,7 +173,7 @@ async def tiktok_get_video_links_and_metadata(tiktok_url, browser_type, label, m
 
     # Run crawler
     try:
-        await crawler.run([tiktok_url])
+        await crawler.run([data.url])
     except Exception as e:
         logger.exception("Crawler run failed")
         raise e
@@ -208,28 +197,9 @@ async def tiktok_get_video_links_and_metadata(tiktok_url, browser_type, label, m
     return json.dumps(items, indent=4, ensure_ascii=False)
 
 
-if __name__ == "__main__":
-    # Tip: dùng argparse cho chắc; dưới đây giữ logic cũ nhưng có log bảo vệ
-    try:
-        tiktok_url = sys.argv[4].strip()
-        web = sys.argv[1].strip() if len(sys.argv) > 2 else "chromium"
-        label = sys.argv[2].strip() if len(sys.argv) > 3 else "newest"
-        max_items = int(sys.argv[3].strip()) if len(sys.argv) > 4 else 30
-        max_comments = int(sys.argv[5]) if len(sys.argv) > 5 else 100
+# Initialize the Litestar app with our route handler
+app = Litestar(route_handlers=[main])
 
-        logger.info(
-            "CLI args | web=%s | label=%s | max_items=%s | url=%s | max_comments=%s",
-            web, label, max_items, tiktok_url, max_comments
-        )
-    except Exception:
-        logger.exception("Bad CLI arguments")
-        sys.exit(2)
-
-    try:
-        result = asyncio.run(
-            tiktok_get_video_links_and_metadata(tiktok_url, web, label, max_items, max_comments)
-        )
-        print("Result:\n", result)
-    except Exception:
-        logger.exception("Fatal error in main")
-        raise
+# Start the Uvicorn server using the `PORT` environment variable provided by GCP
+# This is crucial - Cloud Run expects your app to listen on this specific port
+uvicorn.run(app, host='0.0.0.0', port=int(os.environ.get('PORT', '8080')))  # noqa: S104 # Use all interfaces in a container, safely

@@ -47,7 +47,7 @@ async def tiktok_get_video_links_and_metadata(body: TikTokBody):
             
         try:
             # Lấy phần output sau chữ "Result"
-            result_start = proc.stdout.find("Result: \n")
+            result_start = proc.stdout.find("Result:\n ")
             if result_start == -1:
                 raise ValueError("Không tìm thấy đoạn 'Result' trong stdout")
 
