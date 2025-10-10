@@ -4,7 +4,6 @@ import json
 import asyncio
 import logging
 from logging.handlers import TimedRotatingFileHandler
-from pydantic import BaseModel
 from crawlee.crawlers import PlaywrightCrawler, PlaywrightCrawlingContext
 from crawlee.storage_clients import MemoryStorageClient
 from utils import extract_video_metadata
@@ -200,9 +199,9 @@ async def get_posts_on_tiktok_users(tiktok_url, browser_type, max_items) -> dict
 if __name__ == "__main__":
     # Tip: dùng argparse cho chắc; dưới đây giữ logic cũ nhưng có log bảo vệ
     try:
-        tiktok_url = sys.argv[4].strip()
-        web = sys.argv[1].strip() if len(sys.argv) > 2 else "chromium"
-        max_items = int(sys.argv[3].strip()) if len(sys.argv) > 4 else 30
+        tiktok_url = sys.argv[3].strip()
+        web = sys.argv[1].strip()
+        max_items = int(sys.argv[2].strip()) if len(sys.argv) > 4 else 30
 
         logger.info(
             "CLI args | web=%s | max_items=%s | url=%s",
