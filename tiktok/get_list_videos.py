@@ -201,7 +201,7 @@ if __name__ == "__main__":
     try:
         tiktok_url = sys.argv[3].strip()
         web = sys.argv[1].strip()
-        max_items = int(sys.argv[2].strip()) if len(sys.argv) > 4 else 30
+        max_items = int(sys.argv[2].strip())
 
         logger.info(
             "CLI args | web=%s | max_items=%s | url=%s",
