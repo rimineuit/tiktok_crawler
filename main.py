@@ -47,13 +47,11 @@ class TikTokUserPageCrawler(BaseModel):
 @app.post("/tiktok/get_video_links_on_user_page", tags=["TikTok Crawler"], summary="Lấy danh sách video trên trang cá nhân")
 async def get_video_links_on_user_page(body: TikTokUserPageCrawler):
     try:
-        label = body.label.strip().lower()
         browser_type = body.browser_type.strip().lower()
-        max_comments = str(body.max_comments)
         clean_url = body.url.strip()
         max_items = str(body.max_items).strip()
         script_path = 'tiktok.get_list_videos'
-        cmd = [sys.executable, "-m" ,script_path, browser_type, label, max_items, clean_url, max_comments]
+        cmd = [sys.executable, "-m" ,script_path, browser_type, max_items, clean_url]
         
         # Gọi subprocess
         proc = await asyncio.create_subprocess_exec(
