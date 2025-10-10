@@ -6,3 +6,5 @@ crawlee>=0.5.5
 playwright>=1.46
 pydantic
 pytz
+loguru
+jmespath

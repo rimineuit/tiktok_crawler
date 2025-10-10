@@ -2,7 +2,6 @@ import asyncio
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
 from typing import Annotated
-import subprocess
 import re
 import json
 import os
@@ -42,7 +41,7 @@ Thu thập danh sách video từ trang người dùng
 
 class TikTokUserPageCrawler(BaseModel):
     url: Annotated[str, Field(description="Đường dẫn tới trang cá nhân", examples=['https://www.tiktok.com/@suongvufamily'])]
-    browser_type: Annotated[str,Field(default="firefox" ,description="Loại trình duyệt (hiện tại chỉ hỗ trợ 'firefox')", examples=["chromium", "firefox", "webkit"])]
+    browser_type: Annotated[str, Field(default="firefox" ,description="Loại trình duyệt (hiện tại chỉ hỗ trợ 'firefox')", examples=["firefox", "chromium", "webkit"])]
     max_items: Annotated[int, Field(default=10, ge=1, le=200, description="Số lượng video tối đa cần crawl (1–200)")]
 
 @app.post("/tiktok/get_video_links_on_user_page", tags=["TikTok Crawler"], summary="Lấy danh sách video trên trang cá nhân")
@@ -99,6 +98,15 @@ async def get_video_links_on_user_page(body: TikTokUserPageCrawler):
 """
 Thu thập comments từ người dùng
 """
-
+from tiktok import get_comments
+class TikTokCrawlComments(BaseModel):
+    id: Annotated[str, Field(description="ID của bài đăng trên tiktok", examples=['7516102298347506952'])]
+    
 @app.post("/tiktok/get_comments", tags=['TikTok Crawler'], summary="Lấy danh sách comments của 1 video")
-async def get_comments_of_video()
+async def get_comments_of_video(body: TikTokCrawlComments):
+    id = str(body.id)
+    try:
+        comments = get_comments(id)
+        return comments
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Lỗi khi lấy bình luận: {e}")

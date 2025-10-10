@@ -1,0 +1,1 @@
+from .tiktok_comment_scrapper import get_comments
