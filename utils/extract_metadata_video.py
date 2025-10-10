@@ -1,5 +1,3 @@
-from crawlee.crawlers import PlaywrightCrawlingContext
-from crawlee.router import Router
 from datetime import datetime, timezone
 import pytz
 
@@ -14,9 +12,6 @@ def convert_timestamp_to_vn_time(timestamp: int) -> str:
     dt_vn = dt_utc.astimezone(vn_tz)
     
     return dt_vn.strftime("%Y-%m-%d %H:%M:%S")
-
-
-router = Router[PlaywrightCrawlingContext]()
 
 import re
 

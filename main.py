@@ -5,20 +5,27 @@ import subprocess
 import re
 import json
 import os
+import sys
+
+# Tính đường dẫn tuyệt đối của file hiện tại
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+print(BASE_DIR)
+#Tạo FastAPI app
 app = FastAPI()
 env = os.environ.copy()
 
+# Đảm bảo UTF-8 cho subprocess
 env["PYTHONIOENCODING"] = "utf-8"
 env["PYTHONUTF8"] = "1"
 
+
 class TikTokBody(BaseModel):
     url: str
-    browser_type: str = "chromium"
+    browser_type: str = "firefox"
     label: str = "newest"
     max_items: int = 30
     max_comments: int = 100
 
-import sys
 @app.post("/tiktok/get_video_links_and_metadata")
 async def tiktok_get_video_links_and_metadata(body: TikTokBody):
     try:
@@ -29,25 +36,28 @@ async def tiktok_get_video_links_and_metadata(body: TikTokBody):
         # Nối các URL thành một chuỗi cách nhau bởi dấu cách
         clean_url = body.url.strip()
         max_items = str(body.max_items).strip()
-        script_path = "get_list_videos.py"
-        cmd = [sys.executable, script_path, browser_type, label, max_items, clean_url, max_comments]
-        print(cmd)
+        script_path = 'tiktok.get_list_videos'
+        cmd = [sys.executable, "-m" ,script_path, browser_type, label, max_items, clean_url, max_comments]
+        print(*cmd)
         try:
-            proc = subprocess.run(
-                cmd,
-                capture_output=True,
-                text=True,
-                timeout=900,
-                encoding="utf-8",
-                env=env
+            proc = await asyncio.create_subprocess_exec(
+                *cmd,
+                env=env,
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE
             )
-            
+            stdout_b, stderr_b = await proc.communicate()
+            out = stdout_b.decode("utf-8", "ignore")
+            err = stderr_b.decode("utf-8", "ignore")
+
+            if proc.returncode != 0:
+                raise HTTPException(500, detail=f"Script exit {proc.returncode}:\n{err}")
         except subprocess.TimeoutExpired:
             raise HTTPException(status_code=504, detail="⏱️ Quá thời gian xử lý")
             
         try:
             # Lấy phần output sau chữ "Result"
-            result_start = proc.stdout.find("Result:\n ")
+            result_start = out.find("Result:\n ")
             if result_start == -1:
                 raise ValueError("Không tìm thấy đoạn 'Result' trong stdout")
 
@@ -66,7 +76,7 @@ async def tiktok_get_video_links_and_metadata(body: TikTokBody):
                 status_code=500,
                 detail=f"Lỗi parse JSON từ output: {e}\n\n--- STDOUT ---\n{proc.stdout}"
             )
-            
+        
         return result_json
 
     except asyncio.TimeoutError:

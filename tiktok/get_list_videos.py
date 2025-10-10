@@ -38,7 +38,6 @@ def setup_logger():
 logger = setup_logger()
 # ===================================
 
-
 class TikTokBody(BaseModel):
     url: str
     browser_type: str = "firefox"
@@ -46,9 +45,8 @@ class TikTokBody(BaseModel):
     max_items: int = 30
     max_comments: int = 100
 
-
 # @post('/tiktok/get_video_links_and_metadata')
-async def tiktok_get_video_links_and_metadata(tiktok_url, browser_type, label, max_items, max_comments) -> dict:
+async def get_posts_on_tiktok_users(tiktok_url, browser_type, label, max_items, max_comments) -> dict:
     """The crawler entry point that will be called when the HTTP endpoint is accessed."""
     logger.info(
         "Start crawl | url=%s | browser_type=%s | label=%s | max_items=%s | max_comments=%s",
@@ -181,7 +179,7 @@ async def tiktok_get_video_links_and_metadata(tiktok_url, browser_type, label, m
 
         await context.push_data(final_links[:limit])
         logger.info("Pushed %d items to dataset.", min(len(final_links), limit))
-
+        
     # Run crawler
     try:
         await crawler.run([tiktok_url])
@@ -207,7 +205,6 @@ async def tiktok_get_video_links_and_metadata(tiktok_url, browser_type, label, m
 
     return json.dumps(items, indent=4, ensure_ascii=False)
 
-
 if __name__ == "__main__":
     # Tip: dùng argparse cho chắc; dưới đây giữ logic cũ nhưng có log bảo vệ
     try:
@@ -227,7 +224,7 @@ if __name__ == "__main__":
 
     try:
         result = asyncio.run(
-            tiktok_get_video_links_and_metadata(tiktok_url, web, label, max_items, max_comments)
+            get_posts_on_tiktok_users(tiktok_url, web, label, max_items, max_comments)
         )
         print("Result:\n", result)
     except Exception:

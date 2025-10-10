@@ -1,1 +1,1 @@
-from .extract_video import extract_video_metadata
+from .extract_metadata_video import extract_video_metadata
