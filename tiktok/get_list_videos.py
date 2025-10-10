@@ -38,19 +38,11 @@ def setup_logger():
 logger = setup_logger()
 # ===================================
 
-class TikTokBody(BaseModel):
-    url: str
-    browser_type: str = "firefox"
-    label: str = "newest"
-    max_items: int = 30
-    max_comments: int = 100
-
-# @post('/tiktok/get_video_links_and_metadata')
-async def get_posts_on_tiktok_users(tiktok_url, browser_type, label, max_items, max_comments) -> dict:
+async def get_posts_on_tiktok_users(tiktok_url, browser_type, label, max_items) -> dict:
     """The crawler entry point that will be called when the HTTP endpoint is accessed."""
     logger.info(
-        "Start crawl | url=%s | browser_type=%s | label=%s | max_items=%s | max_comments=%s",
-        tiktok_url, browser_type, label, max_items, max_comments
+        "Start crawl | url=%s | browser_type=%s | label=%s | max_items=%s",
+        tiktok_url, browser_type, label, max_items
     )
 
     # Disable writing storage data to the file system
@@ -212,11 +204,10 @@ if __name__ == "__main__":
         web = sys.argv[1].strip() if len(sys.argv) > 2 else "chromium"
         label = sys.argv[2].strip() if len(sys.argv) > 3 else "newest"
         max_items = int(sys.argv[3].strip()) if len(sys.argv) > 4 else 30
-        max_comments = int(sys.argv[5]) if len(sys.argv) > 5 else 100
 
         logger.info(
-            "CLI args | web=%s | label=%s | max_items=%s | url=%s | max_comments=%s",
-            web, label, max_items, tiktok_url, max_comments
+            "CLI args | web=%s | label=%s | max_items=%s | url=%s",
+            web, label, max_items, tiktok_url
         )
     except Exception:
         logger.exception("Bad CLI arguments")
@@ -224,7 +215,7 @@ if __name__ == "__main__":
 
     try:
         result = asyncio.run(
-            get_posts_on_tiktok_users(tiktok_url, web, label, max_items, max_comments)
+            get_posts_on_tiktok_users(tiktok_url, web, label, max_items)
         )
         print("Result:\n", result)
     except Exception:

@@ -1,6 +1,7 @@
 import asyncio
 from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
+from typing import Annotated
 import subprocess
 import re
 import json
@@ -35,15 +36,17 @@ env["PYTHONIOENCODING"] = "utf-8"
 env["PYTHONUTF8"] = "1"
 
 
-class TikTokBody(BaseModel):
-    url: str
-    browser_type: str = "firefox"
-    label: str = "newest"
-    max_items: int = 30
-    max_comments: int = 100
+"""
+Thu thập danh sách video từ trang người dùng
+"""
 
-@app.post("/tiktok/get_video_links_and_metadata", tags=["TikTok Crawler"], summary="Lấy danh sách video trên trang cá nhân")
-async def tiktok_get_video_links_and_metadata(body: TikTokBody):
+class TikTokUserPageCrawler(BaseModel):
+    url: Annotated[str, Field(description="Đường dẫn tới trang cá nhân", examples=['https://www.tiktok.com/@suongvufamily'])]
+    browser_type: Annotated[str,Field(default="firefox" ,description="Loại trình duyệt (hiện tại chỉ hỗ trợ 'firefox')", examples=["chromium", "firefox", "webkit"])]
+    max_items: Annotated[int, Field(default=10, ge=1, le=200, description="Số lượng video tối đa cần crawl (1–200)")]
+
+@app.post("/tiktok/get_video_links_on_user_page", tags=["TikTok Crawler"], summary="Lấy danh sách video trên trang cá nhân")
+async def get_video_links_on_user_page(body: TikTokUserPageCrawler):
     try:
         label = body.label.strip().lower()
         browser_type = body.browser_type.strip().lower()
@@ -92,3 +95,10 @@ async def tiktok_get_video_links_and_metadata(body: TikTokBody):
         raise HTTPException(status_code=504, detail="⏱️ Quá thời gian xử lý")
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Lỗi crawler: {e}")
+
+"""
+Thu thập comments từ người dùng
+"""
+
+@app.post("/tiktok/get_comments", tags=['TikTok Crawler'], summary="Lấy danh sách comments của 1 video")
+async def get_comments_of_video()
