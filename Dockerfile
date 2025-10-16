@@ -47,7 +47,7 @@ RUN pip install 'crawlee[playwright]' && \
 # 5) Copy mã nguồn
 COPY . /app
 
-# 6) Expose cổng (Cloud Run sẽ map PORT)
+# # 6) Expose cổng (Cloud Run sẽ map PORT)
 ENV PORT=8000
 EXPOSE 8000
 

@@ -1,7 +1,7 @@
 import asyncio
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
-from typing import Annotated
+from typing import Annotated, List, Any
 import re
 import json
 import os
@@ -35,7 +35,7 @@ env["PYTHONIOENCODING"] = "utf-8"
 env["PYTHONUTF8"] = "1"
 
 
-"""
+""" 
 Thu thập danh sách video từ trang người dùng
 """
 
@@ -60,6 +60,7 @@ async def get_video_links_on_user_page(body: TikTokUserPageCrawler):
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE
         )
+        
         stdout_b, stderr_b = await proc.communicate()
         out = stdout_b.decode("utf-8", "ignore")
         err = stderr_b.decode("utf-8", "ignore")
@@ -108,3 +109,92 @@ async def get_comments_of_video(body: TikTokCrawlComments):
         return comments
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Lỗi khi lấy bình luận: {e}")
+    
+"""
+Thu thập bài viết từ trang tiktok trend
+"""
+from tiktok_trend.playwright_tiktok_ads import crawl_tiktok_trend_videos
+class TikTokTrendCrawlPost(BaseModel):
+    limit: Annotated[str, Field(description="Số lượng tối đa cần thu thập (max là 500)", examples=[500], default=500)]
+    period: Annotated[str, Field(description="Period trong trang TikTokTrend", default="7", example=[7, 30, 120])]
+    
+@app.post("/tiktoktrend/crawl_post", tags=['TikTokTrend Crawler'], summary="Thu thập danh sách bài viết trên trang TikTokTrend")
+async def crawl_posts_from_tiktoktrend(body: TikTokTrendCrawlPost):
+    limit = int(body.limit)
+    period = body.period
+    try:
+        result = await crawl_tiktok_trend_videos(limit=limit, period=period)
+        for idx, r in enumerate(result, start=1):
+            r['ranking'] = idx
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Lỗi: {e}")
+        
+    return result
+    
+
+"""
+Thu thập danh sách link nhạc từ TikTokTrend
+"""
+from tiktok_trend.playwright_tiktok_audio import crawl_tiktok_trend_audio
+class TikTokTrendCrawlAudio(BaseModel):
+    limit: Annotated[str, Field(description="Số lượng tối đa cần thu thập (max là 100)", examples=[100], default=100)]
+    period: Annotated[str, Field(description="Period trong trang TikTokTrend", default="7", example=[7, 30, 120])]
+
+@app.post("/tiktoktrend/crawl_audio", tags=['TikTokTrend Crawler'], summary="Thu thập danh sách audio trên trang TikTokTrend")
+async def crawl_audios_from_tiktoktrend(body: TikTokTrendCrawlAudio):
+    limit = int(body.limit)
+    period = body.period
+    
+    # cmd = [sys.executable, "-m", "tiktok_trend.playwright_tiktok_audio", limit, period]
+    try:
+        result = await crawl_tiktok_trend_audio(limit=limit, period=period)
+        for idx, r in enumerate(result, start=1):
+            r['period'] = period
+            r['ranking'] = idx
+            
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Lỗi: {e}")
+    
+    return result
+        
+"""
+Lấy transcripts của video tiktok
+"""
+from utils.get_transcripts import download_transcript
+class GetTranscriptsTikTok(BaseModel):
+    url: Annotated[str, Field(default="https://www.tiktok.com/@cotuyenhoala/video/7527196260919512328", description="Lấy transcripts của một video tiktok", examples=["https://www.tiktok.com/@cotuyenhoala/video/7527196260919512328"])]
+    
+@app.post("/utils/get_transcripts", tags=['utils'])
+async def get_transcripts(body: GetTranscriptsTikTok):
+    url = body.url
+    try:
+        result = await download_transcript(url)
+        
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Lỗi: {e}")
+    
+"""
+Lấy các từ giống nhau
+"""
+from analysis_tiktok_trend.groups_pruned import group_ngrams_from_lists
+class GetPrunnedGroup(BaseModel):
+    ids: Annotated[List[Any], Field(examples=[[1,2,3]], description="Danh sách các id")]
+    transcripts: Annotated[List[str], Field(examples=['hi','hello','goodbye'], description="Danh sách các đoạn văn")]
+    nmin: Annotated[int, Field(examples=[2], default=2, description="Độ dài đoạn nhỏ nhất được gom nhóm")]
+    nmax: Annotated[int, Field(examples=[100], default=100, description="Độ dài đoạn lớn nhất được gom nhóm")]
+    min_id_count: Annotated[int, Field(examples=[2], default=2, description="Số id nhỏ nhất trong một nhóm")]
+@app.post("/utils/get_prunned_groups", tags=['utils'])
+async def get_prunned_groups(body: GetPrunnedGroup):
+    ids = body.ids
+    transcripts = body.transcripts
+    nmin = body.nmin
+    nmax = body.nmax
+    min_id_count = body.min_id_count
+    try:
+        result = group_ngrams_from_lists(ids,transcripts, nmin, nmax, min_id_count)
+        return result
+    
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Lỗi: {e}")
+    
