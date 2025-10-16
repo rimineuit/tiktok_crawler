@@ -180,7 +180,7 @@ Lấy các từ giống nhau
 from analysis_tiktok_trend.groups_pruned import group_ngrams_from_lists
 class GetPrunnedGroup(BaseModel):
     ids: Annotated[List[Any], Field(examples=[[1,2,3]], description="Danh sách các id")]
-    transcripts: Annotated[List[str], Field(examples=['hi','hello','goodbye'], description="Danh sách các đoạn văn")]
+    transcripts: Annotated[List[str], Field(examples=[['hi','hello','goodbye']], description="Danh sách các đoạn văn")]
     nmin: Annotated[int, Field(examples=[2], default=2, description="Độ dài đoạn nhỏ nhất được gom nhóm")]
     nmax: Annotated[int, Field(examples=[100], default=100, description="Độ dài đoạn lớn nhất được gom nhóm")]
     min_id_count: Annotated[int, Field(examples=[2], default=2, description="Số id nhỏ nhất trong một nhóm")]
