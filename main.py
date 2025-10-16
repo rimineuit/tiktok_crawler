@@ -192,7 +192,7 @@ async def get_prunned_groups(body: GetPrunnedGroup):
     nmax = body.nmax
     min_id_count = body.min_id_count
     try:
-        result = group_ngrams_from_lists(ids,transcripts, nmin, nmax, min_id_count)
+        result = await group_ngrams_from_lists(ids,transcripts, nmin, nmax, min_id_count)
         return result
     
     except Exception as e:
