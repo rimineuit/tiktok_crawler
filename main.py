@@ -109,6 +109,39 @@ async def get_comments_of_video(body: TikTokCrawlComments):
         return comments
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Lỗi khi lấy bình luận: {e}")
+"""
+Thu thập audio use count
+""" 
+from tiktok.get_hashtag_use_count import (
+    get_hashtag_used_count as fetch_hashtag_used_count,
+    parse_count,
+)
+class HashtagUseCount(BaseModel):
+    hashtag_url: str  # Danh sách các URL TikTok
+    
+@app.post("/tiktok/get_hashtag_used_count", tags=['TikTok Crawler'])
+def get_hashtag_used_count(body: HashtagUseCount):
+    hashtag_url = body.hashtag_url
+    try:
+        result = parse_count(fetch_hashtag_used_count(hashtag_url))
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Lỗi khi lấy hashtag used count: {e}")
+    
+"""
+Lấy audio used count
+"""
+from tiktok.get_audio_use_count import (parse_count, get_audio_used_count as fetch_audio_used_count)
+class AudioUseCount(BaseModel):
+    audio_url: str
+@app.post("/tiktok/get_audio_used_count", tags=['TikTok Crawler'])
+def get_audio_used_count(body: AudioUseCount):
+    try:
+        audio_url = body.audio_url
+        result = parse_count(fetch_audio_used_count(audio_url)) 
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Lỗi khi lấy audio used count: {e}")
     
 """
 Thu thập bài viết từ trang tiktok trend
@@ -130,7 +163,8 @@ async def crawl_posts_from_tiktoktrend(body: TikTokTrendCrawlPost):
         raise HTTPException(status_code=500, detail=f"Lỗi: {e}")
         
     return result
-    
+
+
 
 """
 Thu thập danh sách link nhạc từ TikTokTrend
@@ -184,6 +218,7 @@ class GetPrunnedGroup(BaseModel):
     nmin: Annotated[int, Field(examples=[2], default=2, description="Độ dài đoạn nhỏ nhất được gom nhóm")]
     nmax: Annotated[int, Field(examples=[100], default=100, description="Độ dài đoạn lớn nhất được gom nhóm")]
     min_id_count: Annotated[int, Field(examples=[2], default=2, description="Số id nhỏ nhất trong một nhóm")]
+
 @app.post("/utils/get_prunned_groups", tags=['utils'])
 async def get_prunned_groups(body: GetPrunnedGroup):
     ids = body.ids

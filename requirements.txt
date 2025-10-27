@@ -10,3 +10,4 @@ jmespath
 yt-dlp
 pandas
 google-genai
+email-validator
