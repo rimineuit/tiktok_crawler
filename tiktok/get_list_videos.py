@@ -99,15 +99,10 @@ async def get_posts_on_tiktok_users(tiktok_url, browser_type, max_items, type_cr
         except Exception:
             logger.info("No 'Skip' modal or click failed; continuing.")
             
-            
         # Nếu type_crawl là 'popular', chuyển sang tab Popular
         if type_crawl == "popular":
             try:
-                popular_tab = (
-                    context.page.locator('button:has-text("Popular")')
-                    .or_(context.page.locator('button:has-text("Thịnh Hành")'))
-                    .first
-                )
+                popular_tab = context.page.locator('button:has-text("Popular")').first
 
                 await popular_tab.wait_for(timeout=10000)
                 await popular_tab.click()
