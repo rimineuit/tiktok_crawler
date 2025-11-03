@@ -40,15 +40,15 @@ logger = setup_logger()
 async def get_posts_on_tiktok_users(tiktok_url, browser_type, max_items, type_crawl) -> dict:
     """The crawler entry point that will be called when the HTTP endpoint is accessed."""
     logger.info(
-        "Start crawl | url=%s | browser_type=%s | max_items=%s",
-        tiktok_url, browser_type, max_items
+        "Start crawl | url=%s | browser_type=%s | max_items=%s | type_crawl=%s",
+        tiktok_url, browser_type, max_items, type_crawl
     )
 
     # Disable writing storage data to the file system
     storage_client = MemoryStorageClient()
 
     crawler = PlaywrightCrawler(
-        headless=True,
+        headless=False,
         max_requests_per_crawl=10,
         browser_type=browser_type,
         storage_client=storage_client,
@@ -201,17 +201,17 @@ async def get_posts_on_tiktok_users(tiktok_url, browser_type, max_items, type_cr
     logger.info("Crawler finished. Dataset items=%d", len(items))
 
     # Persist last result to file for quick inspection
-    try:
-        log_dir = os.getenv("LOG_DIR", "/app/logs")
-        os.makedirs(log_dir, exist_ok=True)
-        out_json = os.path.join(log_dir, "last_results.json")
-        with open(out_json, "w", encoding="utf-8") as f:
-            json.dump(items, f, ensure_ascii=False, indent=2)
-        logger.info("Saved last_results.json to %s", out_json)
-    except Exception:
-        logger.exception("Failed to save last_results.json")
+    # try:
+    #     log_dir = os.getenv("LOG_DIR", "/app/logs")
+    #     os.makedirs(log_dir, exist_ok=True)
+    #     out_json = os.path.join(log_dir, "last_results.json")
+    #     with open(out_json, "w", encoding="utf-8") as f:
+    #         json.dump(items, f, ensure_ascii=False, indent=2)
+    #     logger.info("Saved last_results.json to %s", out_json)
+    # except Exception:
+    #     logger.exception("Failed to save last_results.json")
 
-    return items
+    return json.dumps(items, indent=4, ensure_ascii=False)
 
 if __name__ == "__main__":
     try:
