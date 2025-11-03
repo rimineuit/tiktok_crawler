@@ -38,11 +38,12 @@ env["PYTHONUTF8"] = "1"
 """ 
 Thu thập danh sách video từ trang người dùng
 """
-
+from tiktok.get_list_videos import get_posts_on_tiktok_users as fetch_videos_from_user_page
 class TikTokUserPageCrawler(BaseModel):
     url: Annotated[str, Field(description="Đường dẫn tới trang cá nhân", examples=['https://www.tiktok.com/@suongvufamily'])]
     browser_type: Annotated[str, Field(default="firefox" ,description="Loại trình duyệt (hiện tại chỉ hỗ trợ 'firefox')", examples=["firefox", "chromium", "webkit"])]
     max_items: Annotated[int, Field(default=10, ge=1, le=200, description="Số lượng video tối đa cần crawl (1–200)")]
+    type_crawl: Annotated[str, Field(default="newest", description="Loại nội dung cần crawl", examples=["newest", "popular"])]
 
 @app.post("/tiktok/get_video_links_on_user_page", tags=["TikTok Crawler"], summary="Lấy danh sách video trên trang cá nhân")
 async def get_video_links_on_user_page(body: TikTokUserPageCrawler):
@@ -50,49 +51,59 @@ async def get_video_links_on_user_page(body: TikTokUserPageCrawler):
         browser_type = body.browser_type.strip().lower()
         clean_url = body.url.strip()
         max_items = str(body.max_items).strip()
-        script_path = 'tiktok.get_list_videos'
-        cmd = [sys.executable, "-m" ,script_path, browser_type, max_items, clean_url]
-        
-        # Gọi subprocess
-        proc = await asyncio.create_subprocess_exec(
-            *cmd,
-            env=env,
-            stdout=asyncio.subprocess.PIPE,
-            stderr=asyncio.subprocess.PIPE
+        type_crawl = body.type_crawl.strip().lower()
+        result = await fetch_videos_from_user_page(
+            tiktok_url=clean_url,
+            browser_type=browser_type,
+            max_items=int(max_items),
+            type_crawl=type_crawl
         )
-        
-        stdout_b, stderr_b = await proc.communicate()
-        out = stdout_b.decode("utf-8", "ignore")
-        err = stderr_b.decode("utf-8", "ignore")
-            
-        try:
-            # Lấy phần output sau chữ "Result"
-            result_start = out.find("Result:\n ")
-            if result_start == -1:
-                raise ValueError("Không tìm thấy đoạn 'Result' trong stdout")
-
-            json_part = out[result_start:]
-            # Tìm JSON mảng đầu tiên bắt đầu bằng [ và kết thúc bằng ]
-            json_match = re.search(r"\[\s*{[\s\S]*?}\s*\]", json_part)
-            
-            if not json_match:
-                raise ValueError("Không tìm thấy JSON hợp lệ trong stdout")
-
-            json_text = json_match.group(0).replace("\n", "")
-            result_json = json.loads(json_text)
-
-        except Exception as e:
-            raise HTTPException(
-                status_code=500,
-                detail=f"Lỗi parse JSON từ output: {e}\n\n--- STDOUT ---\n{proc.stdout}"
-            )
-        
-        return result_json
-
-    except asyncio.TimeoutError:
-        raise HTTPException(status_code=504, detail="⏱️ Quá thời gian xử lý")
+        return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Lỗi crawler: {e}")
+    #     script_path = 'tiktok.get_list_videos'
+    #     cmd = [sys.executable, "-m" ,script_path, browser_type, max_items, clean_url, type_crawl]
+        
+    #     # Gọi subprocess
+    #     proc = await asyncio.create_subprocess_exec(
+    #         *cmd,
+    #         env=env,
+    #         stdout=asyncio.subprocess.PIPE,
+    #         stderr=asyncio.subprocess.PIPE
+    #     )
+        
+    #     stdout_b, stderr_b = await proc.communicate()
+    #     out = stdout_b.decode("utf-8", "ignore")
+    #     err = stderr_b.decode("utf-8", "ignore")
+            
+    #     try:
+    #         # Lấy phần output sau chữ "Result"
+    #         result_start = out.find("Result:\n ")
+    #         if result_start == -1:
+    #             raise ValueError("Không tìm thấy đoạn 'Result' trong stdout")
+
+    #         json_part = out[result_start:]
+    #         # Tìm JSON mảng đầu tiên bắt đầu bằng [ và kết thúc bằng ]
+    #         json_match = re.search(r"\[\s*{[\s\S]*?}\s*\]", json_part)
+            
+    #         if not json_match:
+    #             raise ValueError("Không tìm thấy JSON hợp lệ trong stdout")
+
+    #         json_text = json_match.group(0).replace("\n", "")
+    #         result_json = json.loads(json_text)
+
+    #     except Exception as e:
+    #         raise HTTPException(
+    #             status_code=500,
+    #             detail=f"Lỗi parse JSON từ output: {e}\n\n--- STDOUT ---\n{proc.stdout}"
+    #         )
+        
+    #     return result_json
+
+    # except asyncio.TimeoutError:
+    #     raise HTTPException(status_code=504, detail="⏱️ Quá thời gian xử lý")
+    # except Exception as e:
+    #     raise HTTPException(status_code=500, detail=f"Lỗi crawler: {e}")
 
 """
 Thu thập comments từ người dùng

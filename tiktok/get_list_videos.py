@@ -37,7 +37,7 @@ def setup_logger():
 logger = setup_logger()
 # ===================================
 
-async def get_posts_on_tiktok_users(tiktok_url, browser_type, max_items) -> dict:
+async def get_posts_on_tiktok_users(tiktok_url, browser_type, max_items, type_crawl) -> dict:
     """The crawler entry point that will be called when the HTTP endpoint is accessed."""
     logger.info(
         "Start crawl | url=%s | browser_type=%s | max_items=%s",
@@ -92,6 +92,23 @@ async def get_posts_on_tiktok_users(tiktok_url, browser_type, max_items) -> dict
         except Exception:
             logger.exception("wait_for_load_state failed")
 
+        # Nếu type_crawl là 'popular', chuyển sang tab Popular
+        if type_crawl == "popular":
+            try:
+                popular_tab = (
+                    context.page.locator('button:has-text("Popular")')
+                    .or_(context.page.locator('button:has-text("Thịnh Hành")'))
+                    .first
+                )
+
+                await popular_tab.wait_for(timeout=10000)
+                await popular_tab.click()
+                logger.info("Switched to 'Popular' tab successfully.")
+                await context.page.wait_for_load_state("networkidle", timeout=15000)
+            except Exception:
+                logger.exception("Switching to 'Popular' tab failed; continuing with default tab.")
+        else:
+            logger.info("Crawling 'Newest' tab by default.")
         # Close modal if present
         try:
             skip_btn = await context.page.locator("div.TUXButton-label:has-text('Skip')").first
@@ -194,18 +211,18 @@ async def get_posts_on_tiktok_users(tiktok_url, browser_type, max_items) -> dict
     except Exception:
         logger.exception("Failed to save last_results.json")
 
-    return json.dumps(items, indent=4, ensure_ascii=False)
+    return items
 
 if __name__ == "__main__":
-    # Tip: dùng argparse cho chắc; dưới đây giữ logic cũ nhưng có log bảo vệ
     try:
         tiktok_url = sys.argv[3].strip()
         web = sys.argv[1].strip()
         max_items = int(sys.argv[2].strip())
+        type_crawl = sys.argv[4].strip().lower()
 
         logger.info(
-            "CLI args | web=%s | max_items=%s | url=%s",
-            web, max_items, tiktok_url
+            "CLI args | web=%s | max_items=%s | url=%s | type_crawl=%s",
+            web, max_items, tiktok_url, type_crawl
         )
     except Exception:
         logger.exception("Bad CLI arguments")
@@ -213,7 +230,7 @@ if __name__ == "__main__":
 
     try:
         result = asyncio.run(
-            get_posts_on_tiktok_users(tiktok_url, web, max_items)
+            get_posts_on_tiktok_users(tiktok_url, web, max_items, type_crawl)
         )
         print("Result:\n", result)
     except Exception:
