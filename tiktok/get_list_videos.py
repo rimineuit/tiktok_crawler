@@ -91,7 +91,13 @@ async def get_posts_on_tiktok_users(tiktok_url, browser_type, max_items, type_cr
             await context.page.wait_for_load_state("networkidle", timeout=30000)
         except Exception:
             logger.exception("wait_for_load_state failed")
-
+        try:
+            skip_btn = await context.page.locator("div.TUXButton-label:has-text('Skip')").first
+            await skip_btn.wait_for(timeout=5000)
+            await skip_btn.click(timeout=1500)
+            logger.info("Clicked 'Skip' modal successfully.")
+        except Exception:
+            logger.info("No 'Skip' modal or click failed; continuing.")
         # Nếu type_crawl là 'popular', chuyển sang tab Popular
         if type_crawl == "popular":
             try:
