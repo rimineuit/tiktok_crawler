@@ -48,7 +48,7 @@ async def get_posts_on_tiktok_users(tiktok_url, browser_type, max_items, type_cr
     storage_client = MemoryStorageClient()
 
     crawler = PlaywrightCrawler(
-        headless=False,
+        headless=True,
         max_requests_per_crawl=10,
         browser_type=browser_type,
         storage_client=storage_client,
