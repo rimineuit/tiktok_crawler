@@ -48,7 +48,7 @@ async def get_posts_on_tiktok_users(tiktok_url, browser_type, max_items, type_cr
     storage_client = MemoryStorageClient()
 
     crawler = PlaywrightCrawler(
-        headless=True,
+        headless=False,
         max_requests_per_crawl=10,
         browser_type=browser_type,
         storage_client=storage_client,
@@ -86,6 +86,20 @@ async def get_posts_on_tiktok_users(tiktok_url, browser_type, max_items, type_cr
         limit = max_items
         if not isinstance(limit, int) or limit <= 0:
             raise ValueError("`limit` must be a positive integer")
+        try:
+            await context.page.wait_for_load_state("networkidle", timeout=30000)
+        except Exception:
+            logger.exception("wait_for_load_state failed")
+            
+        try:
+            skip_btn = await context.page.locator("div.TUXButton-label:has-text('Skip')").first
+            await skip_btn.wait_for(timeout=5000)
+            await skip_btn.click(timeout=1500)
+            logger.info("Clicked 'Skip' modal successfully.")
+        except Exception:
+            logger.info("No 'Skip' modal or click failed; continuing.")
+            
+            
         # Nếu type_crawl là 'popular', chuyển sang tab Popular
         if type_crawl == "popular":
             try:
@@ -103,10 +117,12 @@ async def get_posts_on_tiktok_users(tiktok_url, browser_type, max_items, type_cr
                 logger.exception("Switching to 'Popular' tab failed; continuing with default tab.")
         else:
             logger.info("Crawling 'Newest' tab by default.")
+            
         try:
             await context.page.wait_for_load_state("networkidle", timeout=30000)
         except Exception:
             logger.exception("wait_for_load_state failed")
+            
         try:
             skip_btn = await context.page.locator("div.TUXButton-label:has-text('Skip')").first
             await skip_btn.wait_for(timeout=5000)
@@ -115,7 +131,6 @@ async def get_posts_on_tiktok_users(tiktok_url, browser_type, max_items, type_cr
         except Exception:
             logger.info("No 'Skip' modal or click failed; continuing.")
 
-        # Close modal if present
         
         # Đợi user-post xuất hiện
         try:
