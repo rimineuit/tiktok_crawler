@@ -14,6 +14,7 @@ __version__ = '2.0.0'
 __MINH__ = '1.0.0'
 def get_comments(
     aweme_id: str,
+    max_pages: int = None
 ): 
     if(not aweme_id):
         raise ValueError('example id : 7418294751977327878')      
@@ -23,7 +24,8 @@ def get_comments(
     )
 
     comments: Comments = TiktokComment()(
-        aweme_id=aweme_id
+        aweme_id=aweme_id,
+        max_pages=max_pages
     )
     
     return comments.dict

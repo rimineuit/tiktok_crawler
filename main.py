@@ -1,7 +1,7 @@
 import asyncio
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
-from typing import Annotated, List, Any
+from typing import Annotated, List, Any, Optional
 import re
 import json
 import os
@@ -102,12 +102,16 @@ Thu thập comments từ người dùng
 from tiktok import get_comments
 class TikTokCrawlComments(BaseModel):
     id: Annotated[str, Field(description="ID của bài đăng trên tiktok", examples=['7516102298347506952'])]
-    
+    max_pages: Annotated[
+        Optional[int],
+        Field(description="Số trang bình luận tối đa cần thu thập để None để lấy full comments", examples=[5], default=None)
+    ]
 @app.post("/tiktok/get_comments", tags=['TikTok Crawler'], summary="Lấy danh sách comments của 1 video")
 async def get_comments_of_video(body: TikTokCrawlComments):
     id = str(body.id)
+    max_pages = body.max_pages
     try:
-        comments = get_comments(id)
+        comments = get_comments(id, max_pages=max_pages)
         return comments
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Lỗi khi lấy bình luận: {e}")

@@ -94,14 +94,15 @@ class TiktokComment:
     
     def get_all_comments(
         self: 'TiktokComment',
-        aweme_id: str
+        aweme_id: str,
+        max_pages: Optional[int] = None
     ) -> Comments:
         page: int = 1
         data: Comments = self.get_comments(
             aweme_id=aweme_id,
             page=page   
         )
-        while(True):
+        while (max_pages is None) or (page < max_pages):
             page += 1
             
             comments: Comments = self.get_comments(
@@ -157,8 +158,10 @@ class TiktokComment:
     
     def __call__(
         self: 'TiktokComment',
-        aweme_id: str
+        aweme_id: str,
+        max_pages: Optional[int] = None
     ) -> Comments:
         return self.get_all_comments(
-            aweme_id=aweme_id
+            aweme_id=aweme_id,
+            max_pages=max_pages
         )
